@@ -1,0 +1,267 @@
+import React, { useState } from "react";
+import "./styles.css";
+
+function PatientForm() {
+    const [sbp, setSbp] = useState("");
+    const [dbp, setDbp] = useState("");
+    const [heartRate, setHeartRate] = useState("");
+    const [spo2, setSpo2] = useState("");
+    const [resp, setResp] = useState("");
+
+    const [vomiting, setVomiting] = useState("None");
+    const [headache, setHeadache] = useState("None");
+    const [seizures, setSeizures] = useState("None");
+
+    const [dizziness, setDizziness] = useState("No");
+    const [blurredVision, setBlurredVision] = useState("No");
+
+    const [pupil, setPupil] = useState("Normal");
+    const [consciousness, setConsciousness] = useState("Alert");
+
+    // Store all returned risks
+    const [result, setResult] = useState(null);
+
+    // -------------------------------
+    // MAP Calculation
+    // -------------------------------
+    const calculateMAP = () => {
+        if (sbp && dbp) {
+            return ((parseFloat(sbp) + 2 * parseFloat(dbp)) / 3).toFixed(2);
+        }
+        return "";
+    };
+
+    // -------------------------------
+    // Submit Data to Flask Backend
+    // -------------------------------
+    const handleSubmit = async () => {
+        const data = {
+            // Vital signs
+            HR: Number(heartRate || 0),
+            O2Sat: Number(spo2 || 0),
+            SBP: Number(sbp || 0),
+            DBP: Number(dbp || 0),
+            MAP: Number(calculateMAP() || 0),
+            Resp: Number(resp || 16),
+
+            // Symptoms
+            vomiting: vomiting,
+            headache: headache,
+            seizures: seizures,
+
+            // Neurological symptoms
+            dizziness: dizziness,
+            blurredVision: blurredVision,
+            pupil: pupil,
+            consciousness: consciousness
+        };
+
+        try {
+            const res = await fetch("http://localhost:5000/predict", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(data)
+            });
+
+            const response = await res.json();
+
+            console.log("Backend response:", response);
+
+            if (response.error) {
+                alert(response.error);
+                return;
+            }
+
+            // Save complete backend response
+            setResult(response);
+
+        } catch (error) {
+            console.error("Backend error:", error);
+            alert("Backend not responding");
+        }
+    };
+
+    return (
+        <div className="container">
+            <h2>👤 Patient Input Form</h2>
+
+            {/* Vital Signs */}
+            <div className="section">
+
+                <h3>🫀 Vital Signs</h3>
+
+                <label className="tooltip-label"> Blood Pressure
+                    <span className="info-icon">ⓘ</span>
+                    <span className="tooltip-text">Enter the TOP number in the 1st box and the BOTTOM number in the 2nd box.
+                        <br />Normal Range: 90-120 mmHg.</span>
+                </label>
+                <input
+                    type="number"
+                    value={sbp}
+                    onChange={(e) => setSbp(e.target.value)}
+                />
+
+                <label></label>
+                <input
+                    type="number"
+                    value={dbp}
+                    onChange={(e) => setDbp(e.target.value)}
+                />
+
+                <label className="tooltip-label"> Heart Rate
+                    <span className="info-icon">ⓘ</span>
+                    <span className="tooltip-text">Beats Per Minute.
+                        <br /> Normal Range: 60-100 bpm.</span>
+                </label>
+                <input
+                    type="number"
+                    value={heartRate}
+                    onChange={(e) => setHeartRate(e.target.value)}
+                />
+
+                <label>SpO₂</label>
+                <input
+                    type="number"
+                    value={spo2}
+                    onChange={(e) => setSpo2(e.target.value)}
+                />
+
+                <label className="tooltip-label"> Respiratory Rate
+                    <span className="info-icon">ⓘ</span>
+                    <span className="tooltip-text">Number of breaths per minute.
+                        <br />Normal Range: 12-20 breaths per minute.</span>
+                </label>
+                <input
+                    type="number"
+                    value={resp}
+                    onChange={(e) => setResp(e.target.value)}
+                />
+
+                <p>
+                    <b>MAP:</b> {calculateMAP()}
+                </p>
+            </div>
+
+            {/* Symptoms */}
+            <div className="section">
+                <h3>🤢 Symptoms</h3>
+
+                <label>Vomiting</label>
+                <select
+                    value={vomiting}
+                    onChange={(e) => setVomiting(e.target.value)}
+                >
+                    <option>None</option>
+                    <option>Occasional</option>
+                    <option>Frequent</option>
+                    <option>Severe</option>
+                </select>
+
+                <label>Headache</label>
+                <select
+                    value={headache}
+                    onChange={(e) => setHeadache(e.target.value)}
+                >
+                    <option>None</option>
+                    <option>Mild</option>
+                    <option>Moderate</option>
+                    <option>Severe</option>
+                </select>
+
+                <label>Seizures</label>
+                <select
+                    value={seizures}
+                    onChange={(e) => setSeizures(e.target.value)}
+                >
+                    <option>None</option>
+                    <option>Rare</option>
+                    <option>Frequent</option>
+                </select>
+            </div>
+
+            {/* Neurological */}
+            <div className="section">
+                <h3>🧠 Neurological Symptoms</h3>
+
+                <label>Dizziness</label>
+                <select
+                    value={dizziness}
+                    onChange={(e) => setDizziness(e.target.value)}
+                >
+                    <option>No</option>
+                    <option>Yes</option>
+                </select>
+
+                <label>Blurred Vision</label>
+                <select
+                    value={blurredVision}
+                    onChange={(e) => setBlurredVision(e.target.value)}
+                >
+                    <option>No</option>
+                    <option>Yes</option>
+                </select>
+
+                <label>Pupil Response</label>
+                <select
+                    value={pupil}
+                    onChange={(e) => setPupil(e.target.value)}
+                >
+                    <option>Normal</option>
+                    <option>Sluggish</option>
+                    <option>Fixed</option>
+                </select>
+
+                <label>Consciousness Level</label>
+                <select
+                    value={consciousness}
+                    onChange={(e) => setConsciousness(e.target.value)}
+                >
+                    <option>Alert</option>
+                    <option>Drowsy</option>
+                    <option>Unconscious</option>
+                </select>
+            </div>
+
+            <button onClick={handleSubmit}>
+                🚀 Predict Risk
+            </button>
+
+            {/* Results */}
+            {result && (
+                <div
+                    className="section"
+                    style={{
+                        marginTop: "20px",
+                        background: "#f8fafc",
+                        padding: "20px",
+                        borderRadius: "12px"
+                    }}
+                >
+                    <h3>📊 Prediction Results</h3>
+                    <p>
+                        <strong>Vitals Risk:</strong>{" "}
+                        {result.vitals_risk}
+                    </p>
+                    <p>
+                        <strong>Clinical Symptom Risk:</strong>{" "}
+                        {result.clinical_symptom_risk}
+                    </p>
+                    <p
+                        style={{
+                            fontSize: "1.3rem",
+                            fontWeight: "bold",
+                            color: "#dc2626"
+                        }}
+                    >
+                        <strong>Overall ICP Risk:</strong>{" "}
+                        {result.overall_risk}
+                    </p>
+                </div>
+            )}
+        </div>
+    );
+}
+
+export default PatientForm;
